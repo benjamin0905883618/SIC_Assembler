@@ -41,7 +41,6 @@ typedef struct sym_node {
 } symNODE;
 
 symNODE *symtab = NULL;
-
 //插入一個節點到symbol table
 symNODE* insert(char *s, int r) {
     symNODE *t = NULL;
@@ -146,11 +145,10 @@ void pass1 () {
         sscanf(operand,"%x",&start_addr);
         sscanf(operand,"%x",&locctr);
         //write line to intermediate file
-        readline();
     }
     else
         locctr = 0;
-    while(strcmp(op,a_end) != 0){
+    while(1){
         if(readline() == 1){
             if(new_search(label)){
                 printf("error : duplicate symbol!\n");
@@ -162,6 +160,8 @@ void pass1 () {
                 locctr += 3;
 
             }
+            else if(strcmp(op,a_end) == 0)
+                break;
             else if(strcmp(op,a_word) == 0)
                 locctr += 3;
             else if(strcmp(op,a_resw) == 0)
@@ -177,7 +177,6 @@ void pass1 () {
 
         }
         //write line to intermediate file
-        readline();
     }
     //write last line to intermediate file
     prog_len = locctr - start_addr;
@@ -205,6 +204,8 @@ void wr_header () {
 //
 // Write your own wr_header()
 //
+    printf("H%s%5x",op,start_addr);
+    //length of object program in bytes(hex);
 }
 
 //初始object code
@@ -249,6 +250,7 @@ void wr_text () {
 //
 // Write your own wr_text()
 //
+    printf("T%5x",start_addr);
 }
 
 //
@@ -268,6 +270,7 @@ void wr_end () {
 //
 // Write your own wr_end()
 //
+    printf("E%5x",start_addr);
 }
 
 
@@ -275,7 +278,7 @@ void pass2 () {
 //
 // Write your own pass2()
 //
-/*
+
     readline();
     if(strcmp(op,a_start) == 0){
         //write listing line
@@ -296,7 +299,7 @@ void pass2 () {
             }
             else if(strcmp(op,a_byte) == 0 || strcmp(op,a_word) == 0);
                 //convert constant to object code
-            if(/*object code will not fit into the current text record then){
+            if(/*object code will not fit into the current text record then*/){
                 wr_text();
                 init_text();
             }
@@ -308,7 +311,8 @@ void pass2 () {
     wr_text();
     wr_end();
     //write last listing line
-*/
+
+
 
 }
 
