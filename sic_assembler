@@ -129,8 +129,8 @@ int readline(){
            operand[x-2] = '\0';
            indexed = 1;
        }
-       //printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
-           //locctr, label, op, operand);
+       printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
+           locctr, label, op, operand);
        return 1;
     } else {
        return 0;
@@ -143,23 +143,24 @@ void pass1 () {
 //
     readline();
     if(strcmp(op,a_start) == 0){
-        start_addr = atoi(operand);
-        locctr = atoi(operand);
+        sscanf(operand,"%x",&start_addr);
+        sscanf(operand,"%x",&locctr);
         //write line to intermediate file
         readline();
     }
     else
         locctr = 0;
     while(strcmp(op,a_end) != 0){
-        if(label[0] != '\0'){
+        if(readline() == 1){
             if(new_search(label)){
-                printf("error : duplicate symbol!");
+                printf("error : duplicate symbol!\n");
                 break;
             }
             else
                 insert(label,locctr);
             if(lookup(op) != NULL){
                 locctr += 3;
+
             }
             else if(strcmp(op,a_word) == 0)
                 locctr += 3;
@@ -274,7 +275,7 @@ void pass2 () {
 //
 // Write your own pass2()
 //
-
+/*
     readline();
     if(strcmp(op,a_start) == 0){
         //write listing line
@@ -295,7 +296,7 @@ void pass2 () {
             }
             else if(strcmp(op,a_byte) == 0 || strcmp(op,a_word) == 0);
                 //convert constant to object code
-            if(/*object code will not fit into the current text record then*/){
+            if(/*object code will not fit into the current text record then){
                 wr_text();
                 init_text();
             }
@@ -307,6 +308,7 @@ void pass2 () {
     wr_text();
     wr_end();
     //write last listing line
+*/
 
 }
 
