@@ -129,8 +129,8 @@ int readline(){
            operand[x-2] = '\0';
            indexed = 1;
        }
-//       printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
-//           locctr, label, op, operand);
+       //printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
+           //locctr, label, op, operand);
        return 1;
     } else {
        return 0;
@@ -151,7 +151,7 @@ void pass1 () {
     else
         locctr = 0;
     while(strcmp(op,a_end) != 0){
-        if(readline() == 1){
+        if(label[0] != '\0'){
             if(new_search(label)){
                 printf("error : duplicate symbol!");
                 break;
@@ -159,30 +159,31 @@ void pass1 () {
             else
                 insert(label,locctr);
             if(lookup(op) != NULL){
-                add
-            }
-            else if(op == "WORD")
                 locctr += 3;
-            else if(op == "RESW")
-                locctr += strInt(operand);
-            else if(op == "RESB")
-                locctr += strInt(operand);
-            else if(op == "BYTE")
+            }
+            else if(strcmp(op,a_word) == 0)
+                locctr += 3;
+            else if(strcmp(op,a_resw) == 0)
+                locctr += 3 * atoi(operand);
+            else if(strcmp(op,a_resb) == 0)
+                locctr += atoi(operand);
+            else if(strcmp(op,a_byte) == 0)
                 locctr += operand_len(operand);
             else{
                 printf("error : invalid operation code !");
                 break;
             }
-            
+
         }
         //write line to intermediate file
         readline();
     }
     //write last line to intermediate file
     prog_len = locctr - start_addr;
-    
+
 }
 
+//輸出synbol table
 void print_symtab (symNODE * t) {
     if (t) {
         print_symtab( t->next );
@@ -190,6 +191,7 @@ void print_symtab (symNODE * t) {
     }
 }
 
+//初始化object code line
 void init_obj_line () {
     int i;
     for (i=0; i<70; i++)
@@ -197,16 +199,19 @@ void init_obj_line () {
     obj_line[i] = '\0';
 }
 
+//寫header record
 void wr_header () {
 //
 // Write your own wr_header()
 //
 }
 
+//初始object code
 void init_obj_code () {
     for (int i=0; i<6; i++) obj_code[i] = ' ';
     obj_code[6] = '\0';
 }
+
 
 void conv_byte ( int l, char *p, char *q ) {
     int i, j, k, max, c, m, n;
@@ -229,6 +234,7 @@ void conv_byte ( int l, char *p, char *q ) {
     }
 }
 
+//初始text record
 void init_text () {
     init_obj_line();
     sprintf( obj_line, "T%6X  ", locctr );
@@ -237,12 +243,14 @@ void init_text () {
     textpos = 9;
 }
 
+//寫入text record
 void wr_text () {
 //
 // Write your own wr_text()
 //
 }
 
+//
 void add_text ( int n, char *p ) {
     int const max = 69;
     int k = n * 2;
@@ -254,6 +262,7 @@ void add_text ( int n, char *p ) {
     for (i=0; i<k; i++) obj_line[textpos++] = p[i];
 }
 
+//寫入end record
 void wr_end () {
 //
 // Write your own wr_end()
@@ -265,10 +274,46 @@ void pass2 () {
 //
 // Write your own pass2()
 //
+
+    readline();
+    if(strcmp(op,a_start) == 0){
+        //write listing line
+        readline();
+    }
+    wr_header();
+    //initial first test record
+    while(strcmp(op,a_end) != 0){
+        if(readline() == 1){
+            if(lookup(op) != NULL){
+                if(new_search(operand) != NULL);
+                    //store symbol value as operand address;
+                else{
+                    //store 0 as operand address;
+                    printf("error : undefined symbol!");
+                    break;
+                }
+            }
+            else if(strcmp(op,a_byte) == 0 || strcmp(op,a_word) == 0);
+                //convert constant to object code
+            if(/*object code will not fit into the current text record then*/){
+                wr_text();
+                init_text();
+            }
+            add_text();
+        }
+        //write listing line
+        readline();
+    }
+    wr_text();
+    wr_end();
+    //write last listing line
+
 }
 
 int main(int argc, char*argv[]){
+    argc = 2;
     int t = argc;
+    argv[1] = "C:\\Users\\B204\\Desktop\\HW01\\test.sic";
     char fname[20];
     int i = 0;
     if (t == 2 ) {
