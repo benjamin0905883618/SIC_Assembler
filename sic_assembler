@@ -38,21 +38,35 @@ const char hex_c[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', '
 typedef struct sym_node {
     char l[7];
     int v;
-    struct sym_node * next;
+    struct sym_node * next,* prev;
+
 } symNODE;
 
+symNODE *tail = NULL;
 symNODE *symtab = NULL;
+int flag = 1;
+
 //插入一個節點到symbol table
 symNODE* insert(char *s, int r) {
-    symNODE *t = NULL;
-    t = (struct sym_node *)malloc(sizeof(struct sym_node));
-    if( t ) {
-        strcpy(t->l, s);
-        t->v = r;
-        t->next = symtab;
-        //t->prev = symtab->prev;
+    if(flag == 1){
+        symtab = (struct sym_node *)malloc(sizeof(struct sym_node));
+        tail = (struct sym_node *)malloc(sizeof(struct sym_node));
+        symtab->prev = NULL;
+        symtab->next = tail;
+        tail->prev = symtab;
+        tail->next = NULL;
+        sprintf(tail->l,"XXXXXXX");
+        flag = 0;
     }
-    return t;
+    symNODE *temp = NULL;
+    temp = (struct sym_node *)malloc(sizeof(struct sym_node));
+    strcpy(temp->l,s);
+    temp->v = r;
+    temp->next = tail;
+    temp->prev = tail->prev;
+    temp->next->prev = temp;
+    temp->prev->next = temp;
+    return tail->prev;
 }
 
 //搜尋symbol table的結點
@@ -61,11 +75,9 @@ symNODE* search(symNODE *t, char *s) {
         if (strcmp(s, t->l) == 0) {
             return t;
         } else {
-            //printf("%s\n",t->l);
             return search(t->next, s);
         }
     } else {
-        //printf("empty");
         return NULL;
     }
 }
@@ -166,17 +178,21 @@ void pass1 () {
         sscanf(operand,"%x",&start_addr);
         sscanf(operand,"%x",&locctr);
         write_line(intermediate_file);
+        insert(label,locctr);
     }
     else
         locctr = 0;
     while(1){
         if(readline() == 1){
-            if(new_search(label)){
-                printf("error : duplicate symbol!\n");
-                break;
+            if(strcmp(label,"      ") != 0){
+                if( new_search(label)){
+                    printf("error : duplicate symbol!\n");
+                    break;
+                }
+                else
+                    insert(label,locctr);
             }
-            else
-                insert(label,locctr);
+
             if(lookup(op) != NULL){
                 locctr += 3;
 
@@ -208,7 +224,7 @@ void pass1 () {
 
 //輸出synbol table
 void print_symtab (symNODE * t) {
-    if (t) {
+    if (t && strcmp(t->l,"XXXXXXX") != 0) {
         print_symtab( t->next );
         printf("[%s] = [%5X]\n", t->l, t->v);
     }
@@ -227,7 +243,7 @@ void wr_header () {
 //
 // Write your own wr_header()
 //
-    printf("H%s%5x",op,start_addr);
+    printf("H%S\t%0.6X%0.6X",label,start_addr,prog_len);
     //length of object program in bytes(hex);
 }
 
@@ -273,7 +289,7 @@ void wr_text () {
 //
 // Write your own wr_text()
 //
-    printf("T%5x",start_addr);
+    printf("%S",obj_line);
 }
 
 //
@@ -293,7 +309,7 @@ void wr_end () {
 //
 // Write your own wr_end()
 //
-    printf("E%5x",start_addr);
+    printf("E%5X",start_addr);
 }
 
 
@@ -308,7 +324,7 @@ void pass2 () {
         readline();
     }
     wr_header();
-    //initial first test record
+    init_text();
     while(strcmp(op,a_end) != 0){
         if(readline() == 1){
             if(lookup(op) != NULL){
@@ -343,7 +359,7 @@ int main(int argc, char*argv[]){
     argc = 2;
     int t = argc;
     argv[1] = "C:\\Users\\徐邦傑\\Desktop\\HW01\\test.sic";
-    char fname[20];
+    char fname[100];
     int i = 0;
     if (t == 2 ) {
         f = fopen(argv[1], "r");
@@ -351,10 +367,12 @@ int main(int argc, char*argv[]){
             printf("... Assembling %s!\n", argv[1]);
             pass1();
             printf("...... End of Pass 1; Program length = %6X.\n", prog_len);
+            wr_header();
             printf("...... Contents in SymbTab:\n");
-            print_symtab( symtab );
+            print_symtab( symtab->next );
             fclose( f );
             strcpy( fname, argv[1] );
+            //printf("%s\n",fname);
             for (i=0; (fname[i]!='.') && (fname[i]!='\0'); i++);
             fname[i++] = '.';
             fname[i++] = 'o';
