@@ -7,6 +7,7 @@
 char name[16];
 FILE *f;
 FILE *fobj;
+FILE *intermediate_file;
 
 char line[80];
 char label[7];
@@ -49,6 +50,7 @@ symNODE* insert(char *s, int r) {
         strcpy(t->l, s);
         t->v = r;
         t->next = symtab;
+        //t->prev = symtab->prev;
     }
     return t;
 }
@@ -59,9 +61,11 @@ symNODE* search(symNODE *t, char *s) {
         if (strcmp(s, t->l) == 0) {
             return t;
         } else {
+            //printf("%s\n",t->l);
             return search(t->next, s);
         }
     } else {
+        //printf("empty");
         return NULL;
     }
 }
@@ -136,15 +140,32 @@ int readline(){
     }
 }
 
+void write_line(FILE* F){
+    line[0] = '\0';
+    char str[6];
+    sprintf(str,"%X",locctr);
+    strcat(line,str);
+    strcat(line,"\t");
+    strcat(line,label);
+    strcat(line,"\t");
+    strcat(line,op);
+    strcat(line,"\t");
+    strcat(line,operand);
+    strcat(line,"\n");
+    //printf("%s",line);
+    fprintf(F,("%s\n",line));
+}
+
 void pass1 () {
 //
 // Write your own pass1()
 //
     readline();
+    intermediate_file = fopen("loc.txt","w");
     if(strcmp(op,a_start) == 0){
         sscanf(operand,"%x",&start_addr);
         sscanf(operand,"%x",&locctr);
-        //write line to intermediate file
+        write_line(intermediate_file);
     }
     else
         locctr = 0;
@@ -174,11 +195,13 @@ void pass1 () {
                 printf("error : invalid operation code !");
                 break;
             }
+            write_line(intermediate_file);
 
         }
-        //write line to intermediate file
+
     }
-    //write last line to intermediate file
+    write_line(intermediate_file);
+    fclose(intermediate_file);
     prog_len = locctr - start_addr;
 
 }
@@ -319,7 +342,7 @@ void pass2 () {
 int main(int argc, char*argv[]){
     argc = 2;
     int t = argc;
-    argv[1] = "C:\\Users\\B204\\Desktop\\HW01\\test.sic";
+    argv[1] = "C:\\Users\\徐邦傑\\Desktop\\HW01\\test.sic";
     char fname[20];
     int i = 0;
     if (t == 2 ) {
@@ -352,4 +375,3 @@ int main(int argc, char*argv[]){
         printf("Assemble syntax: [assemble soure_file_name]\n");
     } // t
 }
-
