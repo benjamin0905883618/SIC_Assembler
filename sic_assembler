@@ -164,6 +164,7 @@ void write_line(FILE* F){
     strcat(line,op);
     strcat(line," ");
     strcat(line,operand);
+    //printf("%s\n",operand);
     strcat(line,"\n");
     //printf("%s",line);
     fprintf(F,"%s",line);
@@ -382,9 +383,9 @@ void write_line_obj(FILE* F){
     strcat(line,obj_code);
     strcat(line,"\n");
     strcat(line,"\0");
-    //printf("%s",line);
-    //printf("%d",strlen(line));
-    fprintf(F,line);
+    printf("%s",line);
+    printf("%d",strlen(line));
+    fprintf(F,"%s",line);
     printf("Write Line OK!");
 }
 
@@ -394,57 +395,58 @@ void pass2 () {
 //
 
     readline_obj();
-    listing_code = fopen("objcode.txt","wb");
+    listing_code = fopen("objcode.txt","w");
     if(strcmp(op,a_start) == 0){
-        write_line_obj(listing_code);
+        //write_line_obj(listing_code);
     }
     //wr_header();
     while(1){
-        if(readline_obj() == 1){
-            if(lookup(op) != NULL){
-                if(strcmp(operand,"") != 0){
-                    if(new_search(operand) != NULL){
-                        init_obj_code();
-                        strcat(obj_code,lookup(op));
-                        char stroperand[10];
-                        sprintf(stroperand,"%X",new_search(operand)->v);
-                        strcat(obj_code,stroperand);
-                        //printf("%s\n",obj_code);
-                    }
-                    else if(operand){
-                        init_obj_code();
-                        strcat(obj_code,"000000");
-                        printf("error : undefined symbol!");
-                        break;
-                    }
-                }
+        readline_obj();
+        if(lookup(op) != NULL){
+            init_obj_code();
+            strcat(obj_code,lookup(op));
+            if(new_search(operand) != NULL){
+                char stroperand[10];
+                sprintf(stroperand,"%X",new_search(operand)->v);
+                strcat(obj_code,stroperand);
+                printf("%s\n",obj_code);
             }
-            else if(strcmp(op,a_end) == 0)
+            else if(strcmp(operand,"") == 0){
+                strcat(obj_code,"0000");
+                printf("%s\n",obj_code);
+            }
+            else if(new_search(operand) == NULL)
+            {
+                printf("error : undefined symbol!");
                 break;
-            else if(strcmp(op,a_byte) == 0){
-                init_obj_code();
-                //printf("%d\n",operand_len(operand));
-                conv_byte(operand_len(operand),operand,obj_code);
             }
-            else if(strcmp(op,a_word) == 0){
-                init_obj_code();
-                int temp = 0;
-                char str[6];
-                sscanf(operand,"%d",&temp);
-                sprintf(obj_code,"%.6X",temp);
-            }
-            write_line_obj(listing_code);
-            printf("write_line successful");
+
         }
-        //add_text(operand_len(),obj_code);
+        else if(strcmp(op,a_end) == 0)
+            break;
+        else if(strcmp(op,a_byte) == 0){
+            init_obj_code();
+            //printf("%d\n",operand_len(operand));
+            conv_byte(operand_len(operand),operand,obj_code);
+            printf("%s\n",obj_code);
+        }
+        else if(strcmp(op,a_word) == 0){
+            init_obj_code();
+            int temp = 0;
+            char str[6];
+            sscanf(operand,"%d",&temp);
+            sprintf(obj_code,"%.6X",temp);
+            printf("%s\n",obj_code);
+        }
+        //write_line_obj(listing_code);
+        //printf("write_line successful");
+
+    //add_text(operand_len(),obj_code);
     }
-    write_line_obj(listing_code);
-    fclose(listing_code);
+    //write_line_obj(listing_code);
+    //fclose(listing_code);
     //add_text(operand_len(),obj_code);
     //wr_end();
-
-
-
 }
 
 
