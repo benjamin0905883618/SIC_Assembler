@@ -368,7 +368,7 @@ int readline_obj(){
     }
 }
 
-void write_line_obj(FILE* F){
+void write_line_obj(){
     line[0] = '\0';
     char str[6];
     sprintf(str,"%X",locctr);
@@ -382,10 +382,11 @@ void write_line_obj(FILE* F){
     strcat(line," ");
     strcat(line,obj_code);
     strcat(line,"\n");
-    strcat(line,"\0");
+    int len = strlen(line);
+    line[len] = '\0';
     printf("%s",line);
     printf("%d",strlen(line));
-    fprintf(F,"%s",line);
+    fprintf(listing_code,"%s",line);
     printf("Write Line OK!");
 }
 
@@ -397,7 +398,7 @@ void pass2 () {
     readline_obj();
     listing_code = fopen("objcode.txt","w");
     if(strcmp(op,a_start) == 0){
-        //write_line_obj(listing_code);
+        write_line_obj();
     }
     //wr_header();
     while(1){
@@ -438,12 +439,12 @@ void pass2 () {
             sprintf(obj_code,"%.6X",temp);
             printf("%s\n",obj_code);
         }
-        //write_line_obj(listing_code);
+        write_line_obj();
         //printf("write_line successful");
 
     //add_text(operand_len(),obj_code);
     }
-    //write_line_obj(listing_code);
+    write_line_obj();
     //fclose(listing_code);
     //add_text(operand_len(),obj_code);
     //wr_end();
