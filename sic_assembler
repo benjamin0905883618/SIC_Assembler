@@ -116,7 +116,7 @@ int operand_len () {
     // printf("find_length([%s] = %d.\n", operand, l);
     return l;
 }
-
+ 
 //讀一行指令
 int readline(){
     int i, j, l, x;
@@ -154,7 +154,6 @@ int readline(){
        return 0;
     }
 }
-
 void write_line(FILE* F){
     line[0] = '\0';
     char str[6];
