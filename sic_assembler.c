@@ -116,7 +116,7 @@ int operand_len () {
     // printf("find_length([%s] = %d.\n", operand, l);
     return l;
 }
- 
+
 //讀一行指令
 int readline(){
     int i, j, l, x;
@@ -154,6 +154,7 @@ int readline(){
        return 0;
     }
 }
+
 void write_line(FILE* F){
     line[0] = '\0';
     char str[6];
@@ -295,7 +296,7 @@ void init_text () {
     //printf("in init_text!\n");
     init_obj_line();
     obj_line[0] = '\0';
-    sprintf( obj_line, "T%.6X  ", locctr );
+    sprintf( obj_line, "T%.6X  ", last_locctr );
     //printf("%s\n",obj_line);
     for (int i=1; i<7; i++)
         if (obj_line[i] == ' ') obj_line[i] = '0';
