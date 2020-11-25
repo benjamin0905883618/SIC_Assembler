@@ -26,6 +26,7 @@ int  last_locctr = 0;
 int  locctr = 0;
 int  textpos = 0;
 int instruction_len = 0;
+int start_address;
 
 const char a_start[] = "START";
 const char a_end[] = "END";
@@ -120,7 +121,7 @@ int operand_len () {
 //讀一行指令
 int readline(){
     int i, j, l, x;
-
+    indexed = 0;
     fgets(line, 80, f);
     l = strlen(line);
     if ((l>0) && (line[0]!='.')) {
@@ -292,11 +293,17 @@ void conv_byte ( int l, char *p, char *q ) {
 }
 
 //初始text record
+int flag_start = 1;
 void init_text () {
     //printf("in init_text!\n");
     init_obj_line();
     obj_line[0] = '\0';
-    sprintf( obj_line, "T%.6X  ", last_locctr );
+    if(flag_start == 1){
+        sprintf( obj_line, "T%.6X  ", locctr );
+        flag_start = 0;
+    }
+    else
+        sprintf( obj_line, "T%.6X  ", last_locctr );
     //printf("%s\n",obj_line);
     for (int i=1; i<7; i++)
         if (obj_line[i] == ' ') obj_line[i] = '0';
@@ -305,18 +312,44 @@ void init_text () {
     //printf("out init_text!\n");
 }
 
+void upper(char c){
+    c -= 32;
+    return c;
+}
+
 //寫入text record
 void wr_text () {
 //
 // Write your own wr_text()
+    char str1[2];
+    char str2[2];
+    int temp,i;
+    /*int i,j;
 
     //printf("in wr_text!\n");
-    char str[2];
-    sprintf(str,"%X",instruction_len);
-    //printf("%s\n",str);
-    obj_line[7] = str[0];
-    obj_line[8] = str[1];
-    //printf("%s\n",obj_line);
+    j = 0;
+    for(i = 3;i < 7;i++){
+        str[j] = obj_line[i];
+        j++;
+    }
+    str[j] = '\0';
+    //int start_address;
+    sscanf(str,"%x",&start_address);
+    start_address = last_locctr - start_address;
+    printf("%X\n",start_address);*/
+    //printf("%.2X",instruction_len);
+    //itoa(instruction_len,str,16);
+    temp = instruction_len % 16;
+    instruction_len /= 16;
+    //printf("%X...%X",temp,instruction_len);
+    itoa(temp,str1,16);
+    itoa(instruction_len,str2,16);
+    //printf("*%s*%s*\n",str1,str2);
+    str1[0] = toupper(str1[0]);
+    str2[0] = toupper(str2[0]);
+    //printf("*%s*%s*\n",str1,str2);
+    obj_line[7] = str2[0];
+    obj_line[8] = str1[0];
     fprintf(fobj,"%s\n",obj_line);
 }
 
@@ -324,10 +357,10 @@ void wr_text () {
 void add_text ( int n, char *p ) {
     int const max = 69;
     int k = n * 2;
-    //printf("%s\n",p);
+    //printf("%d\n",n);
     int i;
     if ((textpos+k) > max) {
-        printf("in 1");
+        //printf("in 1");
         wr_text();
         init_text();
     }
@@ -337,12 +370,8 @@ void add_text ( int n, char *p ) {
         //printf("not empty!");
         instruction_len += n;
     }
-    if(textpos == max){
-        //printf("in 2");
-        wr_text();
-        init_text();
-        last_locctr = locctr;
-    }
+    //instruction_len += n;
+    last_locctr = locctr;
     //printf("out add_text!\n");
 }
 //寫入end record
@@ -402,7 +431,13 @@ void pass2 () {
                 strcat(obj_code,lookup(op));
                 if(new_search(operand) != NULL){
                     char stroperand[4];
-                    sprintf(stroperand,"%4X",new_search(operand)->v);
+                    int temp;
+                    temp = new_search(operand)->v;
+                    if(indexed){
+                        temp += 32768;
+                        //printf("%X",temp);
+                    }
+                    sprintf(stroperand,"%4X",temp);
                     //printf("%d",strlen(obj_code));
                     strcat(obj_code,stroperand);
                     obj_code[strlen(obj_code)] = '\0';
