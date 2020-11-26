@@ -68,7 +68,8 @@ symNODE* new_search( char *s) {
 }
 ```
 輸入 label 後，尋找這個 label ，確保沒有重複定義或者是確認 branch 的位址，使用new_search時，可直接將 symtab 用於搜尋，也可以事先對輸入的字串做整齊的處理，避免未預期到的搜尋問題發生。
-## PASS1
+## Pass 1
+pass1目標為為程式加上location、算出程式長度及建構出symbol table，以下為實作方式
 ```
 void pass1 () {
 //
@@ -124,7 +125,7 @@ void pass1 () {
 
 }
 ```
-根據課本Fig.2.4的Two-Pass演算法中的 PASS1 翻譯成C語言的程式，由於老師事先已經將一些會使用到的函示定義好，本身並沒有甚麼難度。
+根據課本Fig.2.4的Two-Pass演算法中的 Pass1 翻譯成C語言的程式，由於老師事先已經將一些會使用到的函示定義好，本身並沒有甚麼難度。
 ### lookup
 ```
 char* lookup (char *s) {
@@ -213,6 +214,204 @@ void write_line(FILE* F){
 ![](https://i.imgur.com/Sn2NbhN.png)
 ![](https://i.imgur.com/542Wh09.png)
 ![](https://i.imgur.com/47wTHNM.png)
+## Pass 2
+pass2目的為加上object code及加上record
+```
+void pass2 () {
+//
+// Write your own pass2()
+//
+    locctr = 0;
+    readline();
+    listing_code = fopen("output.txt","w+t");
+    if(strcmp(op,a_start) == 0){
+        sscanf(operand,"%x",&locctr);
+        write_line_obj();
+        wr_header();
+    }
+    //wr_header();
+    init_text();
+    while(1){
+        if(readline() == 1){
+            init_obj_code();
+            if(lookup(op) != NULL){
+                locctr += 3;
+                strcat(obj_code,lookup(op));
+                if(new_search(operand) != NULL){
+                    char stroperand[4];
+                    int temp;
+                    temp = new_search(operand)->v;
+                    if(indexed){
+                        temp += 32768;
+                    }
+                    sprintf(stroperand,"%4X",temp);
+                    //printf("%d",strlen(obj_code));
+                    strcat(obj_code,stroperand);
+                    obj_code[strlen(obj_code)] = '\0';
+                    write_line_obj();
 
+                    add_text(3,obj_code);
+                }
+                else if(strcmp(operand,"") == 0){
+                    strcat(obj_code,"0000");
+                    write_line_obj();
+                    add_text(3,obj_code);
+                }
+                else if(new_search(operand) == NULL)
+                {
+                    printf("error : undefined symbol!");
+                    break;
+                }
+            }
+            else if(strcmp(op,a_end) == 0)
+                break;
+            else if(strcmp(op,a_resw) == 0){
+                locctr += 3 * atoi(operand);
+                init_obj_code();
+                write_line_obj();
+                add_text(3,obj_code);
+            }
+            else if(strcmp(op,a_resb) == 0){
+                locctr += atoi(operand);
+                init_obj_code();
+                write_line_obj();
+                add_text(3,obj_code);
+            }
+            else if(strcmp(op,a_byte) == 0){
+                locctr += operand_len(operand);
+                conv_byte(operand_len(operand),operand,obj_code);
+                write_line_obj();
+                add_text(operand_len(operand),obj_code);
+            }
+            else if(strcmp(op,a_word) == 0){
+                locctr += 3;
+                int temp = 0;
+                char str[6];
+                sscanf(operand,"%d",&temp);
+                sprintf(obj_code,"%.6X",temp);
+                write_line_obj();
+                add_text(3,obj_code);
+            }
+        }
+    }
+    wr_text();
+    wr_end();
+    write_line_obj();
+    fclose(listing_code);
+}
+```
+根據課本Fig.2.4，原本應該是要讀intermediate file，但由於需要另外寫函式(因為前面有locctr)及indexed在前面的readline已經被辨識及刪除，因此直接選擇讀原本的檔案。也因此，需要重新計算locctr。
+其中，在pass2中計算object code的方法為opcode + operand的location，如果有indexed須加上32768，而Byte或是Word的object code需要用值去計算(如:EOF的object code為454F46)如程式中計算所示。
+第二次寫檔將locctr、object code都寫上，完成第二個檔案output.txt。
+### write_line_pass2()
 
+```
+void write_line_pass2(){
+    line[0] = '\0';
+    char str[6];
+    sprintf(str,"%X",locctr);
+    //printf("%s",str);
+    strcat(line,str);
+    strcat(line," ");
+    strcat(line,label);
+    strcat(line," ");
+    strcat(line,op);
+    strcat(line," ");
+    strcat(line,operand);
+    strcat(line," ");
+    strcat(line,obj_code);
+    strcat(line,"\n");
+    int len = strlen(line);
+    line[len+1] = '\0';
+    fputs(line,listing_code);
+}
+```
+完成output.txt之外，還要輸出一個文件為檔名.obj，內容為機器碼，機器碼的組成由Header Record、Text Record及End Record組成。
+### Header Record
+```
+void wr_header () {
+//
+// Write your own wr_header()
+//
+    init_obj_line();
+    strcat(obj_line,"H");
+    strcat(obj_line,label);
+    char str[6];
+    sprintf(str,"%.6X",start_addr);
+    strcat(obj_line,str);
+    sprintf(str,"%.6X",prog_len);
+    strcat(obj_line,str);
+    fprintf(fobj,"%s\n",obj_line);
+}
+```
+Header Record的第一個字為H，第2~7個字為程式名稱(即第一個label)，第8~13個字為程式的起始位址，第14~19個字為程式長度(前面已經有計算出來的)
+### Text Record
+```
+int flag_start = 1;
+void init_text () {
+    init_obj_line();
+    if(flag_start == 1){
+        sprintf( obj_line, "T%.6X  ", locctr );
+        flag_start = 0;
+    }
+    else
+        sprintf( obj_line, "T%.6X  ", last_locctr );
+    for (int i=1; i<7; i++)
+        if (obj_line[i] == ' ') obj_line[i] = '0';
+    textpos = 9;
+    sscanf("00","%x",&instruction_len);
+}
+
+//寫入text record
+void wr_text () {
+//
+// Write your own wr_text()
+    char str1[2];
+    char str2[2];
+    int temp,i;
+    temp = instruction_len % 16;
+    instruction_len /= 16;
+    itoa(temp,str1,16);
+    itoa(instruction_len,str2,16);
+    str1[0] = toupper(str1[0]);
+    str2[0] = toupper(str2[0]);
+    obj_line[7] = str2[0];
+    obj_line[8] = str1[0];
+    fprintf(fobj,"%s\n",obj_line);
+}
+
+//
+void add_text ( int n, char *p ) {
+    int const max = 69;
+    int k = n * 2;
+    int i;
+    if ((textpos+k) > max) {
+        wr_text();
+        init_text();
+    }
+    for (i=0; i<k; i++) obj_line[textpos++] = p[i];
+    if(p[0] != '\0'){
+        instruction_len += n;
+    }
+}
+```
+Text Record共分成三個部分，第一個部分為初始化Text Record，即 T + Text Record的初始位址，之後接著兩碼為這段程式的長度，但由於現在不知道是多少，只能暫時空著。
+add_text中，檢查如果程式的長度超過一行Text Record所能乘載的字數，就把這行寫上，並初始化一條新的。
+而wr_text即將後面的長度補上後，將整行obj_line寫入檔案。如果程式結束，在pass2的主函式內會直接wr_text一次。
+
+### End Record
+
+```
+void wr_end () {
+//
+// Write your own wr_end()
+//
+    fprintf(fobj,"E%.6X",start_addr);
+}
+```
+End Record就十分簡單，將E及6碼的start_address寫上，即可完成。
+至此pass2完成，生成名為檔名.obj的檔案。
+附上課本 Fig.2.4 的pass2 : 
+![](https://i.imgur.com/4v3xkFV.png)
+到這邊，我也完成我的功課啦~!
 
