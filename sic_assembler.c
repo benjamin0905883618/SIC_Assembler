@@ -148,15 +148,15 @@ int readline(){
            operand[x-2] = '\0';
            indexed = 1;
        }
-       printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
-           locctr, label, op, operand);
+       //printf("[%6X] Read a line: label=[%s], op=[%s], operand=[%s].\n",
+           //locctr, label, op, operand);
        return 1;
     } else {
        return 0;
     }
 }
 
-void write_line(FILE* F){
+void write_line(){
     line[0] = '\0';
     char str[6];
     sprintf(str,"%X",locctr);
@@ -171,7 +171,7 @@ void write_line(FILE* F){
     strcat(line,"\n");
     line[strlen(line)] = '\0';
     //printf("%s",line);
-    fprintf(F,"%s",line);
+    fprintf(intermediate_file,"%s",line);
 }
 
 void pass1 () {
@@ -184,7 +184,6 @@ void pass1 () {
         sscanf(operand,"%x",&start_addr);
         sscanf(operand,"%x",&locctr);
         write_line(intermediate_file);
-        insert(label,locctr);
     }
     else
         locctr = 0;
@@ -238,10 +237,7 @@ void print_symtab (symNODE * t) {
 
 //初始化object code line
 void init_obj_line () {
-    int i;
-    for (i=0; i<70; i++)
-        obj_line[i] = ' ';
-    obj_line[i] = '\0';
+    obj_line[0] = '\0';
 }
 
 //寫header record
@@ -258,9 +254,7 @@ void wr_header () {
     strcat(obj_line,str);
     sprintf(str,"%.6X",prog_len);
     strcat(obj_line,str);
-    //printf("%s",obj_line);
     fprintf(fobj,"%s\n",obj_line);
-    //length of object program in bytes(hex);
 }
 
 //初始object code
@@ -295,26 +289,17 @@ void conv_byte ( int l, char *p, char *q ) {
 //初始text record
 int flag_start = 1;
 void init_text () {
-    //printf("in init_text!\n");
     init_obj_line();
-    obj_line[0] = '\0';
     if(flag_start == 1){
         sprintf( obj_line, "T%.6X  ", locctr );
         flag_start = 0;
     }
     else
         sprintf( obj_line, "T%.6X  ", last_locctr );
-    //printf("%s\n",obj_line);
     for (int i=1; i<7; i++)
         if (obj_line[i] == ' ') obj_line[i] = '0';
     textpos = 9;
     sscanf("00","%x",&instruction_len);
-    //printf("out init_text!\n");
-}
-
-void upper(char c){
-    c -= 32;
-    return c;
 }
 
 //寫入text record
@@ -324,30 +309,12 @@ void wr_text () {
     char str1[2];
     char str2[2];
     int temp,i;
-    /*int i,j;
-
-    //printf("in wr_text!\n");
-    j = 0;
-    for(i = 3;i < 7;i++){
-        str[j] = obj_line[i];
-        j++;
-    }
-    str[j] = '\0';
-    //int start_address;
-    sscanf(str,"%x",&start_address);
-    start_address = last_locctr - start_address;
-    printf("%X\n",start_address);*/
-    //printf("%.2X",instruction_len);
-    //itoa(instruction_len,str,16);
     temp = instruction_len % 16;
     instruction_len /= 16;
-    //printf("%X...%X",temp,instruction_len);
     itoa(temp,str1,16);
     itoa(instruction_len,str2,16);
-    //printf("*%s*%s*\n",str1,str2);
     str1[0] = toupper(str1[0]);
     str2[0] = toupper(str2[0]);
-    //printf("*%s*%s*\n",str1,str2);
     obj_line[7] = str2[0];
     obj_line[8] = str1[0];
     fprintf(fobj,"%s\n",obj_line);
@@ -357,22 +324,15 @@ void wr_text () {
 void add_text ( int n, char *p ) {
     int const max = 69;
     int k = n * 2;
-    //printf("%d\n",n);
     int i;
     if ((textpos+k) > max) {
-        //printf("in 1");
         wr_text();
         init_text();
     }
     for (i=0; i<k; i++) obj_line[textpos++] = p[i];
-    //printf("%s\n",obj_line);
     if(p[0] != '\0'){
-        //printf("not empty!");
         instruction_len += n;
     }
-    //instruction_len += n;
-    last_locctr = locctr;
-    //printf("out add_text!\n");
 }
 //寫入end record
 void wr_end () {
@@ -385,7 +345,6 @@ void wr_end () {
 int flag_obj = 1;
 void write_line_obj(){
 
-    //listing_code = fopen("objcode.txt","w+t");
     line[0] = '\0';
     char str[6];
     sprintf(str,"%X",locctr);
@@ -402,12 +361,9 @@ void write_line_obj(){
     strcat(line,"\n");
     int len = strlen(line);
     line[len+1] = '\0';
-    //printf("%s",line);
-    //printf("%d",strlen(line));
-    //printf("%s",ferror(listing_code));
     fputs(line,listing_code);
-    //printf("Write Line OK!");
 }
+
 
 void pass2 () {
 //
@@ -415,13 +371,13 @@ void pass2 () {
 //
     locctr = 0;
     readline();
-    listing_code = fopen("output.txt","w+t");
+    listing_code = fopen("output.txt","w");
     if(strcmp(op,a_start) == 0){
         sscanf(operand,"%x",&locctr);
+        sscanf(operand,"%x",&last_locctr);
         write_line_obj();
         wr_header();
     }
-    //wr_header();
     init_text();
     while(1){
         if(readline() == 1){
@@ -435,20 +391,17 @@ void pass2 () {
                     temp = new_search(operand)->v;
                     if(indexed){
                         temp += 32768;
-                        //printf("%X",temp);
                     }
                     sprintf(stroperand,"%4X",temp);
-                    //printf("%d",strlen(obj_code));
                     strcat(obj_code,stroperand);
                     obj_code[strlen(obj_code)] = '\0';
-                    //printf("%s\n",obj_code);
                     write_line_obj();
 
                     add_text(3,obj_code);
                 }
                 else if(strcmp(operand,"") == 0){
                     strcat(obj_code,"0000");
-                    //printf("%s\n",obj_code);
+                    obj_code[strlen(obj_code)] = '\0';
                     write_line_obj();
                     add_text(3,obj_code);
                 }
@@ -463,18 +416,21 @@ void pass2 () {
             else if(strcmp(op,a_resw) == 0){
                 locctr += 3 * atoi(operand);
                 init_obj_code();
+                obj_code[strlen(obj_code)] = '\0';
                 write_line_obj();
                 add_text(3,obj_code);
             }
             else if(strcmp(op,a_resb) == 0){
                 locctr += atoi(operand);
                 init_obj_code();
+                obj_code[strlen(obj_code)] = '\0';
                 write_line_obj();
                 add_text(3,obj_code);
             }
             else if(strcmp(op,a_byte) == 0){
                 locctr += operand_len(operand);
                 conv_byte(operand_len(operand),operand,obj_code);
+                obj_code[strlen(obj_code)] = '\0';
                 write_line_obj();
                 add_text(operand_len(operand),obj_code);
             }
@@ -484,16 +440,19 @@ void pass2 () {
                 char str[6];
                 sscanf(operand,"%d",&temp);
                 sprintf(obj_code,"%.6X",temp);
+                obj_code[strlen(obj_code)] = '\0';
                 write_line_obj();
                 add_text(3,obj_code);
             }
+            if(strlen(obj_code) >= 6)
+                printf("obj_code: %X [%s]\n",last_locctr,obj_code);
+            last_locctr = locctr;
         }
     }
     wr_text();
     wr_end();
     write_line_obj();
     fclose(listing_code);
-    //wr_end();
 }
 
 
