@@ -413,5 +413,6 @@ End Record就十分簡單，將E及6碼的start_address寫上，即可完成。
 至此pass2完成，生成名為檔名.obj的檔案。
 附上課本 Fig.2.4 的pass2 : 
 ![](https://i.imgur.com/4v3xkFV.png)
+
 到這邊，我也完成我的功課啦~!
 
